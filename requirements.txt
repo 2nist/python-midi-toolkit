@@ -1,0 +1,4 @@
+chord-extractor==0.1.2
+mido>=1.2.0
+pretty-midi>=0.2.8
+music21>=5.0.0

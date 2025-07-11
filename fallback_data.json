@@ -1,0 +1,46 @@
+{
+  "sample_progressions": [
+    {
+      "id": 1,
+      "chords": ["C", "F", "G", "C"],
+      "chord_count": 4,
+      "complexity": 3,
+      "patterns": ["Returns to root", "I-IV-V-I progression"]
+    },
+    {
+      "id": 2,
+      "chords": ["Am", "F", "C", "G"],
+      "chord_count": 4,
+      "complexity": 4,
+      "patterns": ["vi-IV-I-V progression", "Very common pop"]
+    },
+    {
+      "id": 3,
+      "chords": ["Dm", "G", "C", "Am", "F", "G", "C"],
+      "chord_count": 7,
+      "complexity": 6,
+      "patterns": ["Contains minor chords", "Extended progression"]
+    },
+    {
+      "id": 4,
+      "chords": ["C", "Am", "Dm", "G"],
+      "chord_count": 4,
+      "complexity": 5,
+      "patterns": ["I-vi-ii-V progression", "Circle of fifths"]
+    },
+    {
+      "id": 5,
+      "chords": ["Em", "Am", "D", "G", "C", "F", "B7", "Em"],
+      "chord_count": 8,
+      "complexity": 8,
+      "patterns": ["Returns to root", "Contains 7th chord", "Minor key center"]
+    }
+  ],
+  "fallback_stats": {
+    "total_progressions": 1257279,
+    "average_length": 6.47,
+    "min_length": 5,
+    "max_length": 81,
+    "dataset_loaded": true
+  }
+}

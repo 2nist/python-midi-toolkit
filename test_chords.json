@@ -1,0 +1,18 @@
+{
+  "title": "Test Song",
+  "artist": "Test Artist",
+  "key": "C",
+  "tempo": 120,
+  "time_signature": "4/4",
+  "chord_progression": [
+    "C", "F", "G", "C",
+    "Am", "F", "C", "G",
+    "F", "C", "G", "Am",
+    "F", "G", "C", "C"
+  ],
+  "structure": {
+    "verse": ["C", "F", "G", "C"],
+    "chorus": ["Am", "F", "C", "G"]
+  },
+  "duration": 60
+}
