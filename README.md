@@ -114,17 +114,18 @@ python reaper_integration.py
 
 ```text
 python2/
-├── main.py                      # Main application script
-├── reaper_integration.py        # REAPER DAW integration module
-├── reaper_workflow_demo.py      # Complete REAPER workflow demonstration
-├── requirements.txt             # Python dependencies
-├── README.md                    # Project documentation
-├── sample_chord.mid             # Generated sample MIDI file
-├── temp_reaper_files/           # Temporary files for REAPER integration
+├── main.py                          # Main application script
+├── reaper_integration.py            # Python helper to launch and communicate with ReaScript UI
+├── chord_progression_panel.luapanel # ReaScript/GFX panel UI for MIDI chord progression
+├── reaper_workflow_demo.py          # Complete REAPER workflow demonstration (TBD)
+├── requirements.txt                 # Python dependencies
+├── README.md                        # Project documentation
+├── sample_chord.mid                 # Generated sample MIDI file (TBD)
+├── temp_reaper_files/               # Temporary files for REAPER integration (TBD)
 ├── .github/
-│   └── copilot-instructions.md  # Copilot configuration
+│   └── copilot-instructions.md      # Copilot configuration
 └── .vscode/
-    └── tasks.json               # VS Code tasks
+    └── tasks.json                   # VS Code tasks
 ```
 
 ## 🌐 Chordify.net Integration
@@ -137,21 +138,11 @@ Since **Chordify.net does not provide a public API**, this integration uses a di
 
 #### � **Web Scraping Approach**
 
-- ✅ **Search Chordify.net** - Scrape search results from web pages  
-- ✅ **Extract chord progressions** - Parse chord data from song pages
-- ✅ **Generate MIDI from chords** - Create MIDI files from scraped progression data
-- ✅ **REAPER integration** - Full project creation with generated files
-- 📊 **Rate limiting** - Respectful scraping with delays
 
 #### � **What This Means for Users**
 
 **All Chordify users (free or paid) get the same integration features:**
 
-- ✅ **Search any song** on Chordify.net
-- ✅ **View chord progressions** from the website  
-- ✅ **Generate realistic MIDI** from chord data
-- ✅ **Create REAPER projects** with chord markers and arrangements
-- ✅ **No subscription required** - works with free Chordify access
 
 > **🎯 Result**: You get a complete song-to-REAPER workflow by leveraging Chordify's chord analysis and generating high-quality MIDI files from that data.
 

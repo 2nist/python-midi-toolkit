@@ -1,0 +1,29 @@
+--[[
+  chord_progression_panel.luapanel
+  ReaScript GFX panel for MIDI Chord Progression
+]]
+
+function draw()
+    gfx.set(1, 1, 1, 1)
+    gfx.rect(0, 0, gfx.w, gfx.h, 1)
+
+    gfx.set(0, 0, 0, 1)
+    gfx.x, gfx.y = 10, 20
+    gfx.drawstr("MIDI Chord Progression Panel")
+
+    -- TODO: implement UI controls for loading MIDI, extracting chords, etc.
+end
+
+function main()
+    -- Initialize GFX window: title, width, height, dockstate, x, y
+    gfx.init("MIDI Chord Progression", 400, 300, 0, 100, 100)
+
+    while gfx.getchar() >= 0 do
+        draw()
+        gfx.update()
+    end
+
+    gfx.quit()
+end
+
+main()

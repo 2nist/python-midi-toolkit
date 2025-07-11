@@ -32,7 +32,22 @@ def midi_notes_to_chord_name(notes_tuple):
     """Convert MIDI note numbers to chord name."""
     if not notes_tuple:
         return "Rest"
-    
+
+    # try using music21 for advanced chord recognition and full-symbol display
+    try:
+        from music21 import chord as m21chord
+        from music21.harmony import chordSymbolFigureFromChord
+        m21_chord = m21chord.Chord(notes_tuple)
+        symbol = chordSymbolFigureFromChord(m21_chord)
+        if symbol:
+            return symbol
+    except ImportError:
+        # music21 not installed or outdated, fallback to basic logic
+        pass
+    except Exception:
+        # any chord parsing errors, fallback
+        pass
+
     notes = sorted(list(notes_tuple))
     
     # Convert MIDI numbers to note names
@@ -52,29 +67,100 @@ def midi_notes_to_chord_name(notes_tuple):
         else:
             return root_name + "2"  # Generic interval
     elif len(notes) >= 3:
-        # Get intervals from root
-        intervals = [(note - notes[0]) % 12 for note in notes[1:]]
+        # Get intervals from root (remove duplicates and sort)
+        intervals = sorted(list(set([(note - notes[0]) % 12 for note in notes[1:]])))
         
-        # Basic chord recognition
-        if 4 in intervals and 7 in intervals:  # Major third + perfect fifth
-            if 10 in intervals:  # Minor seventh
-                return root_name + "7"
-            elif 11 in intervals:  # Major seventh
-                return root_name + "maj7"
+        # Enhanced chord recognition
+        has_maj3 = 4 in intervals   # Major third
+        has_min3 = 3 in intervals   # Minor third
+        has_p5 = 7 in intervals     # Perfect fifth
+        has_dim5 = 6 in intervals   # Diminished fifth / tritone
+        has_aug5 = 8 in intervals   # Augmented fifth
+        has_min7 = 10 in intervals  # Minor seventh
+        has_maj7 = 11 in intervals  # Major seventh
+        has_9 = 2 in intervals      # 9th (same as 2nd)
+        has_11 = 5 in intervals     # 11th (same as 4th)
+        has_13 = 9 in intervals     # 13th (same as 6th)
+        
+        # Build chord name step by step
+        chord_name = root_name
+        
+        # Determine basic quality (major/minor/diminished/augmented)
+        if has_min3 and has_dim5:
+            chord_name += "dim"
+        elif has_min3:
+            chord_name += "m"
+        elif has_maj3 and has_aug5:
+            chord_name += "aug"
+        elif has_maj3 and has_p5:
+            pass  # Major chord, no modifier needed
+        elif has_maj3 and has_dim5:
+            chord_name += "7"  # Dominant (tritone substitution)
+        elif not has_maj3 and not has_min3:
+            # No third, might be sus or quartal
+            if has_11:  # 4th instead of 3rd
+                chord_name += "sus4"
+            elif has_9:  # 2nd instead of 3rd
+                chord_name += "sus2"
+        
+        # Add 7th extensions
+        if has_maj7:
+            if "m" in chord_name:
+                chord_name += "maj7"
             else:
-                return root_name  # Major
-        elif 3 in intervals and 7 in intervals:  # Minor third + perfect fifth
-            if 10 in intervals:  # Minor seventh
-                return root_name + "m7"
-            else:
-                return root_name + "m"  # Minor
-        elif 4 in intervals and 6 in intervals:  # Major third + tritone
-            return root_name + "7"  # Dominant 7 (simplified)
-        else:
-            # Complex chord - just show root with number of notes
-            return f"{root_name}({len(notes)})"
+                chord_name += "maj7"
+        elif has_min7:
+            chord_name += "7"
+        
+        # Add upper extensions (9th, 11th, 13th)
+        extensions = []
+        if has_13:
+            extensions.append("13")
+        elif has_11:
+            extensions.append("11")
+        elif has_9:
+            extensions.append("9")
+        
+        if extensions:
+            # Remove "7" if we're adding higher extensions
+            if chord_name.endswith("7") and not chord_name.endswith("maj7"):
+                chord_name = chord_name[:-1]
+            chord_name += extensions[0]  # Use highest extension
+        
+        # Handle special cases where our analysis might be incomplete
+        if len(intervals) > 5:  # Very complex chord
+            return f"{chord_name}({len(notes)})"
+        
+        return chord_name
     
     return root_name
+
+def midi_notes_to_note_names(notes_tuple):
+    """Convert MIDI note numbers to readable note names with octaves."""
+    if not notes_tuple:
+        return []
+    
+    note_names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+    result = []
+    
+    for midi_note in sorted(notes_tuple):
+        octave = (midi_note // 12) - 1  # MIDI octave calculation
+        note_name = note_names[midi_note % 12]
+        result.append(f"{note_name}{octave}")
+    
+    return result
+
+def get_chord_analysis(notes_tuple):
+    """Get detailed chord analysis including name and constituent notes."""
+    chord_name = midi_notes_to_chord_name(notes_tuple)
+    note_names = midi_notes_to_note_names(notes_tuple)
+    
+    return {
+        "chord_name": chord_name,
+        "notes": note_names,
+        "midi_notes": list(sorted(notes_tuple)) if notes_tuple else [],
+        "note_count": len(notes_tuple) if notes_tuple else 0
+    }
 
 def convert_progression_to_chords(progression) -> List[str]:
     """Convert progression of MIDI note tuples to chord names."""
@@ -183,22 +269,87 @@ def generate_similar_progression(template_progression: tuple, dataset: List[tupl
     else:
         return random.choice(dataset)
 
+def export_lua_index(dataset: List[tuple], output_path: str, limit: int = 1000) -> None:
+    """
+    Export a Lua table of chord progressions for use in a ReaScript panel.
+    """
+    try:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write('-- Generated chord progression index\n')
+            f.write('CHORD_INDEX = {\n')
+            for i, prog in enumerate(dataset[:limit]):
+                chords = convert_progression_to_chords(prog)
+                # Get detailed analysis for each chord
+                chord_details = []
+                for chord_tuple in prog:
+                    analysis = get_chord_analysis(chord_tuple)
+                    chord_details.append(analysis)
+                
+                # escape quotes
+                chord_list = ', '.join(f'"{c}"' for c in chords)
+                
+                # Build note details with proper escaping
+                note_details_parts = []
+                for cd in chord_details:
+                    notes_str = ', '.join(f'"{n}"' for n in cd["notes"])
+                    midi_str = ', '.join(str(m) for m in cd["midi_notes"])
+                    detail_str = f'{{ name = "{cd["chord_name"]}", notes = {{ {notes_str} }}, midi = {{ {midi_str} }} }}'
+                    note_details_parts.append(detail_str)
+                note_details = ', '.join(note_details_parts)
+                
+                f.write(f'  {{ id = {i}, chords = {{ {chord_list} }}, details = {{ {note_details} }} }},\n')
+            f.write('}\n')
+        print(f"✅ Exported Lua index with {min(limit, len(dataset))} entries to {output_path}")
+    except Exception as e:
+        print(f"❌ Failed to export Lua index: {e}")
+
 def main():
     """Main CLI interface for dataset operations."""
     parser = argparse.ArgumentParser(description='Enhanced Chord Dataset Browser')
-    parser.add_argument('command', choices=['browse', 'analyze', 'generate', 'stats'], 
+    parser.add_argument('command', choices=['browse', 'analyze', 'generate', 'stats', 'export-lua-index'], 
                        help='Command to execute')
+    parser.add_argument('--dataset-path', type=str,
+                        help='Path to the chord progression pickle file (optional)')
     parser.add_argument('--page', type=int, default=1, help='Page number for browsing')
     parser.add_argument('--items', type=int, default=10, help='Items per page')
     parser.add_argument('--search', type=str, default='', help='Search query')
     parser.add_argument('--min-length', type=int, default=0, help='Minimum progression length')
     parser.add_argument('--progression-id', type=int, help='Progression ID for analysis')
     parser.add_argument('--template-id', type=int, help='Template progression ID for generation')
+    parser.add_argument('--output-path', type=str, help='File path to write Lua index to')
     
     args = parser.parse_args()
     
-    # Load dataset
-    dataset_path = "/Users/Matthew/git/BiMMuDa/Tegridy-MIDI-Dataset/Chords-Progressions/pitches_chords_progressions_5_3_15.pickle"
+    # Determine dataset path (fallback if not provided)
+    dataset_path = args.dataset_path or (
+        r'C:\Users\CraftAuto-Sales\Downloads\Tegridy-MIDI-Dataset-master\Tegridy-MIDI-Dataset-master\Chords-Progressions\pitches_chords_progressions_5_3_15.pickle'
+    )
+    print(f"🔍 Using dataset at: {dataset_path}")
+    # If dataset file missing, try to reconstruct from split ZIP parts
+    if not os.path.exists(dataset_path):
+        zip_dir = os.path.dirname(dataset_path)
+        # find part files ending .zip.001, .zip.002
+        # gather all split zip parts (e.g. .zip.001, .zip.002, etc.)
+        parts = [f for f in os.listdir(zip_dir)
+                 if f.startswith('Pitches-Chords-Progressions') and '.zip.' in f]
+        if parts:
+            parts = sorted(parts, key=lambda x: int(x.split('.zip.')[-1]))
+            combined_zip = os.path.join(zip_dir, 'combined_chords.zip')
+            print(f"🛠 Reconstructing ZIP from parts: {parts}")
+            with open(combined_zip, 'wb') as out:
+                for part in parts:
+                    with open(os.path.join(zip_dir, part), 'rb') as pf:
+                        out.write(pf.read())
+            # unzip archive
+            try:
+                import zipfile
+                with zipfile.ZipFile(combined_zip, 'r') as z:
+                    z.extractall(zip_dir)
+                print(f"✅ Unzipped combined archive to {zip_dir}")
+            except Exception as uz:
+                print(f"❌ Failed to unzip archive: {uz}")
+            finally:
+                os.remove(combined_zip)
     dataset = load_chord_dataset(dataset_path)
     
     if not dataset:
@@ -244,6 +395,10 @@ def main():
             "analysis": analysis
         }
         print(json.dumps(result, indent=2))
+    
+    elif args.command == 'export-lua-index':
+        output = args.output_path or 'chord_dataset_index.lua'
+        export_lua_index(dataset, output)
 
 if __name__ == "__main__":
     main()
